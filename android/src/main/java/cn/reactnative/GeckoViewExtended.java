@@ -69,7 +69,7 @@ public class GeckoViewExtended extends GeckoView implements WebExtension.Message
         session.setPermissionDelegate(this);
         runtime.getSettings().setJavaScriptEnabled(true);
         runtime.getSettings().setWebManifestEnabled(true);
-        runtime.getSettings().setConsoleOutputEnabled(true);
+        //runtime.getSettings().setConsoleOutputEnabled(true);
     }
 
     public  void setInjectedJavaScript(String script) {
