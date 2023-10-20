@@ -41,7 +41,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class GeckoViewExtended extends GeckoView implements WebExtension.MessageDelegate, GeckoSession.PromptDelegate, GeckoSession.NavigationDelegate, GeckoSession.ProgressDelegate, WebExtension.PortDelegate, GeckoSession.ScrollDelegate, GeckoSession.ContentDelegate, ContentBlocking.Delegate {
+public class GeckoViewExtended extends GeckoView implements WebExtension.MessageDelegate, GeckoSession.PromptDelegate, GeckoSession.NavigationDelegate, GeckoSession.ProgressDelegate, WebExtension.PortDelegate, GeckoSession.ScrollDelegate, GeckoSession.ContentDelegate, ContentBlocking.Delegate, GeckoSession.PermissionDelegate {
     private ReactContext reactContext;
     public WebExtension.Port messagePort;
     private GeckoRuntime rt;
@@ -66,6 +66,7 @@ public class GeckoViewExtended extends GeckoView implements WebExtension.Message
         session.setContentBlockingDelegate(this);
         session.setScrollDelegate(this);
         session.setContentDelegate(this);
+        session.setPermissionDelegate(this);
         runtime.getSettings().setJavaScriptEnabled(true);
         runtime.getSettings().setWebManifestEnabled(true);
         runtime.getSettings().setConsoleOutputEnabled(true);
@@ -341,5 +342,14 @@ public class GeckoViewExtended extends GeckoView implements WebExtension.Message
         reactContext
                 .getJSModule(RCTEventEmitter.class)
                 .receiveEvent(webView.getId(), eventName, event);
+    }
+
+    @Nullable
+    @Override
+    public GeckoResult<Integer> onContentPermissionRequest(@NonNull GeckoSession session, @NonNull ContentPermission perm) {
+        if (perm.permission == GeckoSession.PermissionDelegate.PERMISSION_MEDIA_KEY_SYSTEM_ACCESS) {
+            return GeckoResult.fromValue(GeckoSession.PermissionDelegate.ContentPermission.VALUE_ALLOW);
+        }
+        return null;
     }
 }
