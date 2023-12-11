@@ -124,7 +124,10 @@ public class GeckoViewExtended extends GeckoView implements WebExtension.Message
     @Nullable
     @Override
     public GeckoResult<AllowOrDeny> onLoadRequest(@NonNull GeckoSession session, @NonNull LoadRequest request) {
-        return GeckoSession.NavigationDelegate.super.onLoadRequest(session, request);
+        if (request.target == GeckoSession.NavigationDelegate.TARGET_WINDOW_NEW) {
+            session.loadUri(request.uri);
+        }
+        return GeckoResult.fromValue(AllowOrDeny.ALLOW);
     }
 
     @Nullable
