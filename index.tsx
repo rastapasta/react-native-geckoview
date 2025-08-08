@@ -8,7 +8,7 @@ import {
 } from "react-native";
 
 export interface GeckoViewInterface extends ViewProps {
-  source?: { html?: string; uri?: string };
+  source?: { html?: string; uri?: string; headers?: { [key: string]: string } };
   forceDarkOn?: boolean;
   autoFillEnabled?: boolean;
   remoteDebugging?: boolean;

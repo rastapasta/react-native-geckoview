@@ -14,6 +14,7 @@ import androidx.annotation.Nullable;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.ReadableMapKeySetIterator;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.uimanager.events.RCTEventEmitter;
 
@@ -40,6 +41,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 public class GeckoViewExtended extends GeckoView implements WebExtension.MessageDelegate, GeckoSession.PromptDelegate, GeckoSession.NavigationDelegate, GeckoSession.ProgressDelegate, WebExtension.PortDelegate, GeckoSession.ScrollDelegate, GeckoSession.ContentDelegate, ContentBlocking.Delegate, GeckoSession.PermissionDelegate {
     private ReactContext reactContext;
@@ -152,20 +155,22 @@ public class GeckoViewExtended extends GeckoView implements WebExtension.Message
                 }
                 if (source.hasKey("uri")) {
                     String url = source.getString("uri");
+                    ReadableMap headers = source.hasKey("headers") ? source.getMap("headers") : null;
+                    
                     if (url.startsWith("file:///android_asset")) {
                         String outputPath = reactContext.getCacheDir().getAbsolutePath() + File.separator + "android_asset";
                         boolean exists = new File(outputPath).exists();
                         if (exists) {
                             String newPath = url.replace("file:///android_asset", outputPath);
-                            session.loadUri(newPath);
+                            loadUriWithHeaders(session, newPath, headers);
                         } else {
                             new File(outputPath).mkdir();
                             doCopy("",outputPath);
                             String newPath = url.replace("file:///android_asset", outputPath);
-                            session.loadUri(newPath);
+                            loadUriWithHeaders(session, newPath, headers);
                         }
                     } else {
-                        session.loadUri(url);
+                        loadUriWithHeaders(session, url, headers);
                     }
                     return;
                 }
@@ -173,6 +178,31 @@ public class GeckoViewExtended extends GeckoView implements WebExtension.Message
             session.loadUri("about:blank");
         } catch (Exception e) {
 
+        }
+    }
+
+    private void loadUriWithHeaders(GeckoSession session, String url, ReadableMap headers) {
+        if (headers != null && headers.toHashMap().size() > 0) {
+            GeckoSession.Loader loader = new GeckoSession.Loader();
+            loader.uri(url);
+            
+            Map<String, String> headerMap = new HashMap<>();
+            ReadableMapKeySetIterator iterator = headers.keySetIterator();
+            while (iterator.hasNextKey()) {
+                String key = iterator.nextKey();
+                String value = headers.getString(key);
+                if (value != null) {
+                    headerMap.put(key, value);
+                }
+            }
+            
+            if (!headerMap.isEmpty()) {
+                loader.additionalHeaders(headerMap);
+            }
+            
+            session.load(loader);
+        } else {
+            session.loadUri(url);
         }
     }
 
