@@ -128,7 +128,11 @@ public class GeckoViewExtended extends GeckoView implements WebExtension.Message
     @Override
     public GeckoResult<AllowOrDeny> onLoadRequest(@NonNull GeckoSession session, @NonNull LoadRequest request) {
         if (request.target == GeckoSession.NavigationDelegate.TARGET_WINDOW_NEW) {
-            session.loadUri(request.uri);
+            WritableMap map = Arguments.createMap();
+            map.putString("uri", request.uri);
+            dispatchEvent(this, "onOpenWindow", map);
+
+            return GeckoResult.fromValue(AllowOrDeny.DENY);
         }
         return GeckoResult.fromValue(AllowOrDeny.ALLOW);
     }
@@ -156,7 +160,7 @@ public class GeckoViewExtended extends GeckoView implements WebExtension.Message
                 if (source.hasKey("uri")) {
                     String url = source.getString("uri");
                     ReadableMap headers = source.hasKey("headers") ? source.getMap("headers") : null;
-                    
+
                     if (url.startsWith("file:///android_asset")) {
                         String outputPath = reactContext.getCacheDir().getAbsolutePath() + File.separator + "android_asset";
                         boolean exists = new File(outputPath).exists();
@@ -182,28 +186,25 @@ public class GeckoViewExtended extends GeckoView implements WebExtension.Message
     }
 
     private void loadUriWithHeaders(GeckoSession session, String url, ReadableMap headers) {
-        if (headers != null && headers.toHashMap().size() > 0) {
-            GeckoSession.Loader loader = new GeckoSession.Loader();
-            loader.uri(url);
-            
-            Map<String, String> headerMap = new HashMap<>();
-            ReadableMapKeySetIterator iterator = headers.keySetIterator();
-            while (iterator.hasNextKey()) {
-                String key = iterator.nextKey();
-                String value = headers.getString(key);
-                if (value != null) {
-                    headerMap.put(key, value);
-                }
+        GeckoSession.Loader loader = new GeckoSession.Loader().uri(url);
+
+        Map<String, String> headerMap = new HashMap<>();
+        if (headers != null) {
+            ReadableMapKeySetIterator it = headers.keySetIterator();
+            while (it.hasNextKey()) {
+                String k = it.nextKey();
+                String v = headers.getString(k);
+                if (v != null) headerMap.put(k, v);
             }
-            
-            if (!headerMap.isEmpty()) {
-                loader.additionalHeaders(headerMap);
-            }
-            
-            session.load(loader);
-        } else {
-            session.loadUri(url);
         }
+
+        if (!headerMap.isEmpty()) {
+            // Allow non-safelisted headers like Authorization / X-*
+            loader.headerFilter(GeckoSession.HEADER_FILTER_UNRESTRICTED_UNSAFE)
+                .additionalHeaders(headerMap);
+        }
+
+        session.load(loader);
     }
 
     private void doCopy(String dirName, String outPath) throws IOException {

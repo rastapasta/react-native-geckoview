@@ -24,6 +24,7 @@ export interface GeckoViewInterface extends ViewProps {
   ) => void;
   onMessagingDisconnected?: () => void;
   injectedJavaScript?: string;
+  onOpenWindow?: (event: NativeSyntheticEvent<{ uri: string }>) => void;
 }
 
 export type WebViewCommands = {
@@ -101,6 +102,7 @@ export default class GeckoView extends React.Component<GeckoViewInterface> {
         onLoadingFinish={this.props.onLoadingFinish}
         onMessagingDisconnected={this.props.onMessagingDisconnected}
         injectedJavaScript={this.props.injectedJavaScript}
+        onOpenWindow={this.props.onOpenWindow}
       />
     );
   }

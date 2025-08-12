@@ -100,6 +100,7 @@ public class GeckoViewManager extends SimpleViewManager<View> {
         export.put("topHttpError", MapBuilder.of("registrationName", "onHttpError"));
         export.put("topRenderProcessGone", MapBuilder.of("registrationName", "onRenderProcessGone"));
         export.put("topMessagingDisconnected", MapBuilder.of("registrationName", "onMessageDisconnected"));
+        export.put("onOpenWindow", MapBuilder.of("registrationName", "onOpenWindow"));
         return export;
     }
 
