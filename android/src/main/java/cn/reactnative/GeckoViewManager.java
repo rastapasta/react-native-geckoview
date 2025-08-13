@@ -1,5 +1,7 @@
 package cn.reactnative;
 
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.view.View;
 
@@ -10,6 +12,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.StorageController;
+import org.mozilla.geckoview.GeckoRuntimeSettings;
 
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
@@ -35,8 +38,40 @@ public class GeckoViewManager extends SimpleViewManager<View> {
     public View createViewInstance(ThemedReactContext c) {
         if (mGeckoRuntime == null) {
             mGeckoRuntime = GeckoRuntime.create(c);
+
+            // Debug/profiling-friendly settings — DO NOT SHIP IN PROD
+            if (isDebuggableOrProfileable(c)) {
+                final GeckoRuntimeSettings settings = mGeckoRuntime.getSettings();
+                settings.setEnterpriseRootsEnabled(true);
+            }
         }
-        return new GeckoViewExtended(c,mGeckoRuntime);
+        return new GeckoViewExtended(c, mGeckoRuntime);
+    }
+
+    private boolean isDebuggableOrProfileable(ThemedReactContext context) {
+        try {
+            PackageManager pm = context.getPackageManager();
+            ApplicationInfo appInfo = pm.getApplicationInfo(context.getPackageName(), 0);
+
+            // Check for debuggable flag
+            boolean isDebuggable = (appInfo.flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+
+            // Check for profileable flag (API 29+)
+            boolean isProfileable = false;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                try {
+                    // Use reflection to check profileable flag since it's not available in all API levels
+                    java.lang.reflect.Field profileableField = ApplicationInfo.class.getDeclaredField("profileable");
+                    isProfileable = profileableField.getBoolean(appInfo);
+                } catch (Exception e) {
+                    // Profileable field not available or accessible, ignore
+                }
+            }
+
+            return isDebuggable || isProfileable;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
     }
 
     @ReactProp(name = "source")
